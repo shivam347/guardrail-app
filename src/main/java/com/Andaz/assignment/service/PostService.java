@@ -10,6 +10,7 @@ import com.Andaz.assignment.repository.BotRepository;
 import com.Andaz.assignment.repository.PostRepository;
 import com.Andaz.assignment.repository.UserRepository;
 
+import org.springframework.transaction.annotation.Transactional;
 import lombok.AllArgsConstructor;
 
 @Service
@@ -22,6 +23,7 @@ public class PostService {
 
 
     /* Method to create the post */
+    @Transactional
     public PostResponse createPost(CreatePostRequest request){
 
         // First check the user or bot exists or not , we call one method called validateAuthor
