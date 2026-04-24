@@ -1,5 +1,7 @@
 package com.Andaz.assignment.controller;
 
+import org.apache.catalina.connector.Response;
+import org.apache.coyote.BadRequestException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,6 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.Andaz.assignment.dto.CommentRequest;
 import com.Andaz.assignment.dto.CommentResponse;
 import com.Andaz.assignment.dto.CreatePostRequest;
+import com.Andaz.assignment.dto.LikeRequest;
+import com.Andaz.assignment.dto.LikeResponse;
 import com.Andaz.assignment.dto.PostResponse;
 import com.Andaz.assignment.service.CommentService;
 import com.Andaz.assignment.service.PostService;
@@ -39,10 +43,18 @@ public class PostController {
 
     /* PostMapping to add the comment to the post */
     @PostMapping("/{postid}/comments")
-    public ResponseEntity<CommentResponse> addComment(@PathVariable Long postid, @Valid @RequestBody CommentRequest request){
+    public ResponseEntity<CommentResponse> addComment(@PathVariable Long postid, @Valid @RequestBody CommentRequest request) throws BadRequestException{
        CommentResponse response =  commentService.addComment(postid, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
         
+    }
+
+    /* Post Mapping for like the post */
+    @PostMapping("/{postId}/like")
+    public ResponseEntity<LikeResponse> likePost(@PathVariable Long postId, @Valid @RequestBody LikeRequest request){
+       LikeResponse response =  postService.likePost(postId, request);
+       return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
     }
     
 }
