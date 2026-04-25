@@ -27,6 +27,7 @@ public class CommentService {
     private final CommentRepository commentRepo;
     private final BotRepository botRepo;
     private final RedisGuardRailService redisGuardRailService;
+    private final NotificationService notificationService;
 
     /* Method to add the comment to the post */
     @Transactional
@@ -61,11 +62,12 @@ public class CommentService {
         // for a post or a comment
         // first we need to find human id
         botCommentReservation reservation = null;
+        String botName = null;
         if (request.getAuthorType() == AuthorType.BOT) {
             Long humanId = getHumanId(post, parentComment);
             // Now we need to set the coolDown period using redisTemplate service
-            redisGuardRailService.reservedBotComment(postId, request.getAuthorId(), humanId);
-
+           reservation = redisGuardRailService.reservedBotComment(postId, request.getAuthorId(), humanId);
+           botName = botRepo.findById(request.getAuthorId()).orElseThrow(() -> new ResourceNotFoundException("BOT not found with id: " + request.getAuthorId())).getName();
         }
 
         // Now we should create the comment
@@ -91,7 +93,7 @@ public class CommentService {
 
             // Now call rediservice and increment the viralCount
             redisGuardRailService.viralityScore(postId, interactionType);
-
+            triggerNotificationIfNeeded(post, request.getAuthorType(), botName);
             CommentResponse response = new CommentResponse();
             response.setId(savedComment.getId());
             response.setPostId(savedComment.getPost().getId());
@@ -111,20 +113,29 @@ public class CommentService {
 
     }
 
-    private Long getHumanId(Post post, Comment parentComment) {
+    /* helper method for triggering notification */
+    private void triggerNotificationIfNeeded(Post post, AuthorType authorType, String botName) {
+        // trigger notification only when author type is bot and post author type is user
+        if(post.getAuthorType() != AuthorType.USER || authorType != AuthorType.BOT){
+            return;
+        }
+       
+        String notificationMessg = "BOT "+botName+" replied to your post";
+        notificationService.handleBotInteraction(post.getAuthorId(), notificationMessg);
 
+    }
+
+    private Long getHumanId(Post post, Comment parentComment) {
         // first checks the parentComment type should be the user
         if (parentComment != null && parentComment.getAuthorType() == AuthorType.USER) {
             return parentComment.getAuthorId();
         }
-
         // if bot is interacting by simply making comment not replying to any comment
         // interacting with the human post, so check
         // post belongs to user
         if (post.getAuthorType() == AuthorType.USER) {
             return post.getAuthorId();
         }
-
         return null;
     }
 
